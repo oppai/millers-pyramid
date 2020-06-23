@@ -12,7 +12,7 @@
     <table class="range-table-side" border="1">
       <thead>
         <td>Streat</td>
-        <td>Call / Range</td>
+        <td>Action / Range</td>
       </thead>
       <tbody>
         <tr>
@@ -33,10 +33,11 @@
 </template>
 
 <script>
-const Numbers = 'AKQJT98765432'.split('')
+const { deflate, unzip } = require('zlib'); // eslint-disable-line
+const Numbers = 'AKQJT98765432'.split('');
 const Status = {
   none: 0, preflop: 1, flop: 2, turn: 3, river: 4
-}
+};
 
 function format(value, index1, index2) {
   return value + (index1 > index2 ? 'o' : ( index1 == index2 ? '' : 's') );
@@ -44,7 +45,7 @@ function format(value, index1, index2) {
 function combo(index1, index2) {
   return (index1 > index2 ? 12 : ( index1 == index2 ? 6 : 4) );
 }
-const cards = Numbers.map(function (num1, idx1) {
+let cards = Numbers.map(function (num1, idx1) {
   return Numbers.map(function (num2, idx2) {
     return {
       hole: format(num2+num1, idx1, idx2),
@@ -52,18 +53,42 @@ const cards = Numbers.map(function (num1, idx1) {
       status: Status.none
     }
   })
-})
-
+});
 function countCombos(status, cards) {
   return cards.reduce( (acc, rows) =>
     acc + (rows.reduce((acc2, x) => acc2 + (x.status >= status ? x.combo : 0), 0))
-  , 0)
+  , 0);
+}
+function updateQuery(self, cards) {
+  const list = cards.map(row => row.map(c => c.status))
+  const json = JSON.stringify(list)
+  deflate(json, (err, buffer) => {
+    if (err) { console.log(err) }
+    const cardsParam = buffer.toString('base64')
+    self.$router.replace({ path: '/', query: {cards: cardsParam} }).catch(()=>{})
+  })
+}
+function loadQuery(self) { // eslint-disable-line
+  const cardsParam = self.$route.query.cards
+  const buffer = Buffer.from(cardsParam, 'base64');
+  unzip(buffer, (err, buffer) => {
+    if (err) { console.log(err) }
+    const list = JSON.parse(buffer.toString())
+    self.cards = self.cards.map((rows, i) =>
+      rows.map((c, j) => {
+        c.status = list[i][j]
+        return c
+      }))
+  })
 }
 export default {
-  data () {
+  mounted() {
+    loadQuery(this)
+  },
+  data() {
     return {
       cards: cards,
-      status: Status
+      status: Status,
     }
   },
   methods: {
@@ -78,6 +103,7 @@ export default {
     },
     changeStatus(item) {
       item.status = (item.status + 1) % 5;
+      updateQuery(this, cards)
     },
     showRatio(status) {
       const current = countCombos(status, cards)
