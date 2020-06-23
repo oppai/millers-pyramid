@@ -33,14 +33,17 @@
 </template>
 
 <script>
-const { deflate, unzip } = require('zlib'); // eslint-disable-line
+const { deflate, unzip } = require('zlib');
 const Numbers = 'AKQJT98765432'.split('');
 const Status = {
   none: 0, preflop: 1, flop: 2, turn: 3, river: 4
 };
 
+function reverse(str) {
+  return str.split("").reverse().join("");
+}
 function format(value, index1, index2) {
-  return value + (index1 > index2 ? 'o' : ( index1 == index2 ? '' : 's') );
+ return index1 > index2 ? value + 'o' : ( index1 == index2 ? value : reverse(value) + 's');
 }
 function combo(index1, index2) {
   return (index1 > index2 ? 12 : ( index1 == index2 ? 6 : 4) );
@@ -68,7 +71,7 @@ function updateQuery(self, cards) {
     self.$router.replace({ path: '/', query: {cards: cardsParam} }).catch(()=>{})
   })
 }
-function loadQuery(self) { // eslint-disable-line
+function loadQuery(self) {
   const cardsParam = self.$route.query.cards
   const buffer = Buffer.from(cardsParam, 'base64');
   unzip(buffer, (err, buffer) => {
