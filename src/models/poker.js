@@ -3,7 +3,12 @@ const {
     unzip
 } = require('zlib');
 
-const Numbers = 'AKQJT98765432'.split('');
+const NumbersNLH = 'AKQJT98765432'.split('');
+const Numbers6PLS = 'AKQJT9876'.split('');
+const GameType = {
+    Holdem: 0,
+    ShortDeck: 1
+}
 const Status = {
     none: 0,
     preflop: 1,
@@ -24,9 +29,18 @@ function combo(index1, index2) {
     return (index1 > index2 ? 12 : (index1 == index2 ? 6 : 4));
 }
 
-function makeInitializeTable() {
-    return Numbers.map(function (num1, idx1) {
-        return Numbers.map(function (num2, idx2) {
+function getNumbers(type) {
+    if( type == GameType.ShortDeck ) {
+        return Numbers6PLS;
+    } else {
+        return NumbersNLH;
+    }
+}
+
+function makeInitializeTable(type = GameType.Holdem) {
+    const numbers = getNumbers(type)
+    return numbers.map(function (num1, idx1) {
+        return numbers.map(function (num2, idx2) {
             return {
                 hole: format(num2 + num1, idx1, idx2),
                 combo: combo(idx1, idx2),
@@ -64,6 +78,7 @@ function decodeTable(cards, cardsParam, callback) {
 }
 
 export {
+    GameType,
     Status,
     makeInitializeTable,
     format,
